@@ -1,0 +1,45 @@
+services:
+  gitlab:
+    image:  registry.cn-hangzhou.aliyuncs.com/privmirror/gitlab-ce:18.9.6-ce.0
+    container_name: gitlab
+    restart: always
+    hostname: '192.168.1.221'
+    environment:
+      TZ: Asia/Shanghai
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://192.168.1.221:8081'
+        gitlab_rails['time_zone'] = 'Asia/Shanghai'
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 8G
+        reservations:
+          cpus: '2.0'
+          memory: 4G
+    ports:
+      - '8081:8081'
+    volumes:
+      - './config:/etc/gitlab'
+      - './logs:/var/log/gitlab'
+      - 'gitlab-data:/var/opt/gitlab'
+    shm_size: '256m'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/-/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 300s
+    networks:
+      - gitlab-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "10"
+networks:
+  gitlab-net:
+    driver: bridge
+    name: gitlab-net
+volumes:
+  gitlab-data:
