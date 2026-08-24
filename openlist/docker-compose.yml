@@ -1,0 +1,35 @@
+services:
+  openlist:
+    image: registry.cn-hangzhou.aliyuncs.com/privmirror/openlist:v4.2.5
+    container_name: openlist
+    restart: always
+    # 需替换
+    user: '994:994'
+    environment:
+      - TZ=Asia/Shanghai
+      - UMASK=022
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+    networks:
+      - openlist-net
+    volumes:
+      - ./data:/opt/openlist/data
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    ports:
+      - '5244:5244'
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
+networks:
+  openlist-net:
+    driver: bridge
+    name: openlist-net

@@ -1,0 +1,9 @@
+# 部署参考
+1. groupadd -r openlist
+2. useradd -r -g openlist -s /usr/sbin/nologin -M openlist
+3. 确认用户的id号: id openlist
+4. 修改编排文件的user映射值
+5. chown -R openlist:openlist ./data
+6. 启动: docker-compose up -d
+7. 密码查看: docker logs openlist | grep password
+8. 访问验证即可
