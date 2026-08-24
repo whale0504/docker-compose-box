@@ -8,6 +8,6 @@
 7. 密码查看: docker logs openlist | grep password
 8. 访问验证即可
 9. 新增本地存储截图
-![](./images/local.png)
+![本地存储](https://github.com/whale0504/docker-compose-box/blob/main/openlist/images/local.png)
 10. 关闭签名截图
-![](./images/closesignature.png)
+![关闭签名](https://github.com/whale0504/docker-compose-box/blob/main/openlist/images/closesignature.png)
