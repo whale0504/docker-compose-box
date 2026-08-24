@@ -7,3 +7,7 @@
 6. 启动: docker-compose up -d
 7. 密码查看: docker logs openlist | grep password
 8. 访问验证即可
+9. 新增本地存储截图
+![](./images/local.png)
+10. 关闭签名截图
+![](./images/closesignature.png)
