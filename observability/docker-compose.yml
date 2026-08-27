@@ -1,0 +1,218 @@
+services:
+  prometheus:
+    image: registry.cn-hangzhou.aliyuncs.com/privmirror/prometheus:v3.13.1
+    container_name: prometheus
+    environment:
+      - TZ=Asia/Shanghai
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+      - '--log.level=info'
+      - '--log.format=json'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    ports:
+      - "9090:9090"
+    restart: always
+    deploy:
+      resources:
+        reservations:
+          cpus: '0.8'
+          memory: '1.5G'
+        limits:
+          cpus: '1.0'
+          memory: '2G'
+    networks:
+      - monitor
+    volumes:
+      - ./conf/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./conf/prometheus/rules:/etc/prometheus/rules:ro
+      - prome_data:/prometheus
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+  alertmanager:
+    image: registry.cn-hangzhou.aliyuncs.com/privmirror/alertmanager:v0.32.2
+    container_name: alertmanager
+    restart: always
+    ports:
+      - "9093:9093"
+    networks:
+      - monitor
+    environment:
+      - TZ=Asia/Shanghai
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--log.level=info'
+      - '--log.format=json'
+    deploy:
+      resources:
+        reservations:
+          cpus: '0.3'
+          memory: '512M'
+        limits:
+          cpus: '0.5'
+          memory: '1G'
+    volumes:
+      - ./conf/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alert_data:/alertmanager
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:9093/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+  prometheus-alert:
+    image: registry.cn-hangzhou.aliyuncs.com/privmirror/prometheus-alert:v5.0.0
+    container_name: prometheus-alert
+    restart: always
+    ports:
+      - "8082:8080"
+    networks:
+      - monitor
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./conf/prometheus-alert/app.conf:/app/conf/app.conf
+      - promalert_data:/app/db
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+  blackbox-exporter:
+    image: registry.cn-hangzhou.aliyuncs.com/privmirror/blackbox-exporter:v0.28.0
+    container_name: blackbox-exporter
+    command:
+      - --config.file=/etc/blackbox_exporter/blackbox.yaml
+      - --web.listen-address=:9115
+      - --timeout-offset=0.5
+      - --log.level=info
+    restart: always
+    environment:
+      - TZ=Asia/Shanghai
+    ports:
+      - "9115:9115"
+    networks:
+      - monitor
+    deploy:
+      resources:
+        reservations:
+          cpus: '0.1'
+          memory: '50M'
+        limits:
+          cpus: '0.2'
+          memory: '256M'
+    volumes:
+      - ./conf/blackbox/blackbox.yaml:/etc/blackbox_exporter/blackbox.yaml:ro
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:9115/-/healthy"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+  victorialogs:
+    image: registry.cn-hangzhou.aliyuncs.com/privmirror/victoria-logs:v1.52.0
+    container_name: victorialogs
+    restart: always
+    ports:
+      - "9428:9428"
+    networks:
+      - monitor
+    environment:
+      - TZ=Asia/Shanghai
+    command:
+      - '-storageDataPath=/data/victorialogs'
+      - '-retentionPeriod=365d'
+    deploy:
+      resources:
+        reservations:
+          cpus: '0.4'
+          memory: '1G'
+        limits:
+          cpus: '1'
+          memory: '2G'
+    volumes:
+      - vict_data:/data/victorialogs
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:9428/health"]
+      interval: 30s
+      timeout: 6s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+  grafana:
+    image: registry.cn-hangzhou.aliyuncs.com/privmirror/grafana:12.3.0
+    container_name: grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    networks:
+      - monitor
+    deploy:
+      resources:
+        reservations:
+          cpus: '0.4'
+          memory: '768M'
+        limits:
+          cpus: '2'
+          memory: '4G'
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=Admin@1qaz2WSX
+      - TZ=Asia/Shanghai
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./provisioning/datasources/prometheus/prometheus.yml:/etc/grafana/provisioning/datasources/prometheus.yml
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 25s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+volumes:
+  prome_data:
+  alert_data:
+  vict_data:
+  grafana_data:
+  promalert_data:
+networks:
+  monitor:
+    driver: bridge
+    name: monitor

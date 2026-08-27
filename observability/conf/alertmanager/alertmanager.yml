@@ -1,0 +1,13 @@
+global:
+  resolve_timeout: 5m
+route:
+  group_by: ['alertname']
+  group_wait: 20s
+  group_interval: 5m
+  repeat_interval: 6h
+  receiver: 'Default'
+receivers:
+  - name: 'Default'
+    webhook_configs:
+      - url: 'http://prometheus-alert:8080/prometheusalert?type=wx&tpl=prometheus-wx&wxurl=https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxt=tom'
+        send_resolved: true
