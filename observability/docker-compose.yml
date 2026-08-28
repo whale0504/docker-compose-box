@@ -194,7 +194,10 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./provisioning/dashboards/dashboard.yml:/etc/grafana/provisioning/dashboards/dashboard.yml
       - ./provisioning/datasources/prometheus/prometheus.yml:/etc/grafana/provisioning/datasources/prometheus.yml
+      - ./provisioning/dashboards/node_exporter.json:/var/lib/grafana/dashboards/node_exporter.json
+      - ./provisioning/dashboards/blackbox_exporter.json:/var/lib/grafana/dashboards/blackbox_exporter.json
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/api/health"]
       interval: 30s
